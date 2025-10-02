@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_co_activity_connect/screens/activity_feed_screen.dart';
-import 'package:flutter_co_activity_connect/screens/auth/login_screen.dart';
-import 'package:flutter_co_activity_connect/screens/auth/signin_screen.dart';
-import 'package:flutter_co_activity_connect/screens/profile_screen.dart';
-import 'package:flutter_co_activity_connect/utils/secure_storage.dart';
+import 'package:flutter_co_activity_connect/utils/app_colors.dart';
+import 'package:flutter_co_activity_connect/screens/activity/activity_feed_screen.dart';
+import 'package:flutter_co_activity_connect/screens/profile/profile_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -13,43 +11,37 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
-  final List<Widget> _screens = [ActivityFeedScreen(), ProfileScreen()];
+  final List<Widget> _screenList = [ActivityFeedScreen(), ProfileScreen()];
+
   int _selectedIndex = 0;
 
-  void _onTapped(int idx) {
+  void _selected(int newIndex) {
     setState(() {
-      _selectedIndex = idx;
+      _selectedIndex = newIndex;
     });
-  }
-
-  Future<void> checkAuth() async {
-    String? token = await getToken();
-    if (token == null) {
-      if (!mounted) return;
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => LoginPage()),
-      );
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    Future.microtask(() => checkAuth());
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_selectedIndex],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: _onTapped,
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home), label: "Home"),
-          NavigationDestination(icon: Icon(Icons.person), label: "Profile"),
+      body: _screenList[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        items: [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.home_rounded),
+            label: "Feed",
+          ),
+          // BottomNavigationBarItem(icon: Icon(Icons.person), label: "Friend"),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_rounded),
+            label: "Profile",
+          ),
         ],
+        onTap: _selected,
+        currentIndex: _selectedIndex,
+        showUnselectedLabels: false,
+        showSelectedLabels: false,
+        selectedItemColor: AppColors.primaryColor,
       ),
     );
   }

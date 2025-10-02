@@ -1,41 +1,61 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_co_activity_connect/utils/app_colors.dart';
 
 class InputField extends StatelessWidget {
-  final bool autoFocus;
-  final String labelText, hintText;
+  final String text, hintText;
   final TextEditingController controller;
+  final Widget? prefixIcon, suffixIcon;
+  final bool? autofocus, obscureText;
+  final TextInputAction textInputAction;
+  final TextInputType textInputType;
   final String? Function(String?)? validator;
-  final int maxLines;
+  final ValueChanged<String>? onSubmitted;
   const InputField({
     super.key,
-    this.autoFocus = false,
-    this.maxLines = 1,
-    required this.labelText,
+    required this.text,
     required this.hintText,
     required this.controller,
-    required this.validator,
+    required this.textInputAction,
+    required this.textInputType,
+    this.validator,
+    this.onSubmitted,
+    this.autofocus = false,
+    this.obscureText = false,
+    this.suffixIcon,
+    this.prefixIcon,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Text(
-          labelText,
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          maxLines: maxLines,
-          decoration: InputDecoration(
-            hintText: hintText,
-            border: OutlineInputBorder(),
-            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(text),
+          SizedBox(height: 6.0),
+          TextFormField(
+            keyboardType: textInputType,
+            textInputAction: textInputAction,
+            autofocus: autofocus!,
+            controller: controller,
+            validator: validator,
+            obscureText: obscureText!,
+            onFieldSubmitted: onSubmitted,
+            decoration: InputDecoration(
+              hintText: hintText,
+              fillColor: AppColors.greyColor,
+              filled: true,
+              prefixIcon: prefixIcon,
+              suffixIcon: suffixIcon,
+              border: OutlineInputBorder(
+                borderSide: BorderSide.none,
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
           ),
-          validator: validator,
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

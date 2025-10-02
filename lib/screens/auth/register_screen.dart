@@ -2,28 +2,33 @@ import 'dart:convert';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_co_activity_connect/components/dropdown_button.dart';
 import 'package:flutter_co_activity_connect/components/input_field.dart';
 import 'package:flutter_co_activity_connect/storage/secure_storage.dart';
 import 'package:flutter_co_activity_connect/utils/app_colors.dart';
+import 'package:flutter_co_activity_connect/utils/app_constants.dart';
 import 'package:flutter_co_activity_connect/utils/validator.dart';
-import 'package:flutter_co_activity_connect/screens/auth/register_screen.dart';
 import 'package:flutter_co_activity_connect/screens/main_screen.dart';
 import 'package:flutter_co_activity_connect/services/auth_service.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
+  final AuthService _authService = AuthService();
   final _formKey = GlobalKey<FormState>();
+  late TextEditingController _usernameCtrl;
   late TextEditingController _emailCtrl;
   late TextEditingController _passwordCtrl;
-  final AuthService _authService = AuthService();
-  bool obscureText = true;
-
+  late TextEditingController _confirmPasswordCtrl;
+  late TextEditingController _majorCtrl;
+  bool obscureText = true, confirmObscureText = true;
+  String? _selectedYear;
+  String? _selectedFaculty;
   bool _isLoading = false;
   String _errorMessage = '';
 
@@ -32,25 +37,35 @@ class _LoginScreenState extends State<LoginScreen> {
     super.initState();
     _emailCtrl = TextEditingController();
     _passwordCtrl = TextEditingController();
+    _usernameCtrl = TextEditingController();
+    _majorCtrl = TextEditingController();
+    _confirmPasswordCtrl = TextEditingController();
   }
 
   @override
   void dispose() {
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
+    _usernameCtrl.dispose();
+    _majorCtrl.dispose();
+    _confirmPasswordCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _submitForm() async {
     setState(() {
       _isLoading = true;
-      _errorMessage = "";
+      _errorMessage = '';
     });
-    if (_formKey.currentState!.validate()) {
-      try {
-        final response = await _authService.login(
+    try {
+      if (_formKey.currentState!.validate()) {
+        final response = await _authService.register(
+          _usernameCtrl.text.trim(),
           _emailCtrl.text.trim(),
           _passwordCtrl.text.trim(),
+          _selectedYear!,
+          _selectedFaculty!,
+          _majorCtrl.text.trim(),
         );
         debugPrint("Response: ${jsonDecode(response.body)}");
         if (response.statusCode == 201) {
@@ -72,21 +87,15 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           );
         }
-      } catch (e) {
-        setState(() {
-          _errorMessage = 'Could not connect to the server';
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_errorMessage),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      } finally {
-        setState(() {
-          _isLoading = false;
-        });
       }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Could not connect to the server';
+      });
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -109,14 +118,22 @@ class _LoginScreenState extends State<LoginScreen> {
                     Align(
                       alignment: Alignment.topLeft,
                       child: Text(
-                        "Welcome back! Glad to see you, Again!",
+                        "Hello! Register to get started",
                         style: TextStyle(fontSize: 36),
                       ),
                     ),
-                    SizedBox(height: 128),
-                    // _inputField("Email", "Enter your email", _emailCtrl),
+                    SizedBox(height: 64),
                     InputField(
                       autofocus: true,
+                      text: "Username",
+                      hintText: "Enter your username",
+                      controller: _usernameCtrl,
+                      textInputAction: TextInputAction.next,
+                      textInputType: TextInputType.name,
+                      validator: (v) => Validator.validateUsername(v),
+                    ),
+                    SizedBox(height: 16),
+                    InputField(
                       text: "Email",
                       hintText: "Enter your email",
                       controller: _emailCtrl,
@@ -127,7 +144,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     SizedBox(height: 16),
                     InputField(
                       text: "Password",
-                      hintText: "Enter your pssword",
+                      hintText: "Enter your password",
                       controller: _passwordCtrl,
                       obscureText: obscureText,
                       suffixIcon: IconButton(
@@ -135,12 +152,65 @@ class _LoginScreenState extends State<LoginScreen> {
                             setState(() => obscureText = !obscureText),
                         icon: Icon(
                           obscureText ? Icons.visibility_off : Icons.visibility,
-                          color: Colors.grey,
                         ),
                       ),
-                      textInputAction: TextInputAction.done,
+                      textInputAction: TextInputAction.next,
                       textInputType: TextInputType.visiblePassword,
                       validator: (v) => Validator.validatePassword(v),
+                    ),
+                    SizedBox(height: 16),
+                    InputField(
+                      text: "Confirm Password",
+                      hintText: "Enter your confirm-password",
+                      obscureText: confirmObscureText,
+                      suffixIcon: IconButton(
+                        onPressed: () => setState(
+                          () => confirmObscureText = !confirmObscureText,
+                        ),
+                        icon: Icon(
+                          confirmObscureText
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                      ),
+
+                      controller: _confirmPasswordCtrl,
+                      textInputAction: TextInputAction.next,
+                      textInputType: TextInputType.visiblePassword,
+                      validator: (v) => Validator.validateConfirmPassword(
+                        _passwordCtrl.text.trim(),
+                        v!.trim(),
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    DropDownButton<String>(
+                      validator: (v) => v == null ? 'Year is required' : null,
+                      text: "Year",
+                      hintText: "Select your year",
+                      items: AppConstants.years,
+                      onChanged: (val) => setState(() => _selectedYear = val),
+                      value: _selectedYear,
+                    ),
+
+                    SizedBox(height: 16),
+                    DropDownButton(
+                      validator: (v) =>
+                          v == null ? "Faculty is required" : null,
+                      text: "Faculty",
+                      hintText: "Select your faculty",
+                      items: AppConstants.faculties,
+                      onChanged: (val) =>
+                          setState(() => _selectedFaculty = val),
+                      value: _selectedFaculty,
+                    ),
+                    SizedBox(height: 16),
+                    InputField(
+                      text: "Major",
+                      hintText: "Enter your major",
+                      controller: _majorCtrl,
+                      textInputAction: TextInputAction.done,
+                      textInputType: TextInputType.name,
+                      validator: (v) => v!.isEmpty ? "Major is required" : null,
                       onSubmitted: (v) => _submitForm(),
                     ),
                     SizedBox(height: 24),
@@ -162,24 +232,20 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         child: _isLoading
                             ? CircularProgressIndicator.adaptive()
-                            : Text("Login"),
+                            : Text("Sign up"),
                       ),
                     ),
                     SizedBox(height: 24),
                     RichText(
                       text: TextSpan(
-                        text: "Don't have an account?",
+                        text: "Already have account?",
                         style: TextStyle(color: Colors.black),
                         children: [
                           TextSpan(
-                            text: "\t\t\tSign up",
+                            text: "\t\t\tSign in",
                             style: TextStyle(fontWeight: FontWeight.bold),
                             recognizer: TapGestureRecognizer()
-                              ..onTap = () => Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => RegisterScreen(),
-                                ),
-                              ),
+                              ..onTap = () => Navigator.of(context).pop(),
                           ),
                         ],
                       ),

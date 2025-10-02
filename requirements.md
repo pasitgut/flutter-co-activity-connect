@@ -39,3 +39,10 @@
 
 - Push Notification (มีบุคคลเข้าร่วมกลุ่ม, ข้อความใหม่, event updates)
 - ตั้งค่าการแจ้งเตือน
+
+private + not join = requested to join
+private + join = group chat + member list
+public + not join = requested to joing + member list
+public + join = group chat + member list
+
+flutter build apk --target-platform android-arm,android-arm64,android-x64
